@@ -1,0 +1,384 @@
+// Code scaffolded by goctl. Safe to edit.
+// goctl 1.9.2
+
+package svc
+
+import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/anil-wu/spark-x/internal/config"
+	"github.com/anil-wu/spark-x/internal/model"
+	"github.com/anil-wu/spark-x/internal/storage"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
+)
+
+type ServiceContext struct {
+	Config config.Config
+	DB     *gorm.DB
+	Conn   sqlx.SqlConn
+
+	UsersModel             model.UsersModel
+	UserIdentitiesModel    model.UserIdentitiesModel
+	ProjectsModel          model.ProjectsModel
+	ProjectMembersModel    model.ProjectMembersModel
+	ProjectFilesModel      model.ProjectFilesModel
+	FilesModel             model.FilesModel
+	FileVersionsModel      model.FileVersionsModel
+	AdminsModel            model.AdminsModel
+	SoftwareTemplatesModel model.SoftwareTemplatesModel
+	WorkspaceCanvasModel   model.WorkspaceCanvasModel
+	WorkspaceLayerModel    model.WorkspaceLayerModel
+
+	ObjectStore storage.ObjectStore
+
+	OSSClient *oss.Client
+	OSSBucket *oss.Bucket
+}
+
+func normalizeOSSEndpoint(rawEndpoint, bucket string) string {
+	raw := strings.TrimSpace(rawEndpoint)
+	if raw == "" {
+		return raw
+	}
+
+	b := strings.TrimSpace(bucket)
+
+	var scheme string
+	var host string
+
+	u, err := url.Parse(raw)
+	if err == nil && u.Host != "" {
+		scheme = u.Scheme
+		host = u.Host
+	} else {
+		u2, err2 := url.Parse("https://" + raw)
+		if err2 == nil && u2.Host != "" {
+			scheme = "https"
+			host = u2.Host
+		} else {
+			host = raw
+		}
+	}
+
+	host = strings.TrimSuffix(host, "/")
+
+	if b != "" {
+		prefix := b + "."
+		for strings.HasPrefix(host, prefix) {
+			host = strings.TrimPrefix(host, prefix)
+		}
+	}
+
+	if scheme != "" {
+		return scheme + "://" + host
+	}
+	return host
+}
+
+func (s *ServiceContext) StorageProvider() string {
+	provider := strings.ToLower(strings.TrimSpace(s.Config.Storage.Provider))
+	if provider == "" {
+		if strings.TrimSpace(s.Config.S3.Endpoint) != "" && strings.TrimSpace(s.Config.S3.Bucket) != "" {
+			return "s3"
+		}
+		return "oss"
+	}
+	if provider == "minio" {
+		return "s3"
+	}
+	return provider
+}
+
+func (s *ServiceContext) StorageExpireSeconds() int64 {
+	if s == nil {
+		return 1800
+	}
+	if s.Config.Storage.ExpireSeconds > 0 {
+		return s.Config.Storage.ExpireSeconds
+	}
+
+	switch s.StorageProvider() {
+	case "s3":
+		if s.Config.S3.ExpireSeconds > 0 {
+			return s.Config.S3.ExpireSeconds
+		}
+	default:
+		if s.Config.OSS.ExpireSeconds > 0 {
+			return s.Config.OSS.ExpireSeconds
+		}
+	}
+	if s.Config.OSS.ExpireSeconds > 0 {
+		return s.Config.OSS.ExpireSeconds
+	}
+	if s.Config.S3.ExpireSeconds > 0 {
+		return s.Config.S3.ExpireSeconds
+	}
+	return 1800
+}
+
+func NewServiceContext(c config.Config) *ServiceContext {
+	var db *gorm.DB
+	var err error
+	if c.MySQL.DSN != "" {
+		db, err = gorm.Open(mysql.Open(c.MySQL.DSN), &gorm.Config{
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: true,
+			},
+		})
+		if err != nil {
+			panic(err)
+		}
+		sqlDB, err := db.DB()
+		if err == nil {
+			sqlDB.SetMaxOpenConns(20)
+			sqlDB.SetMaxIdleConns(5)
+			sqlDB.SetConnMaxLifetime(5 * time.Minute)
+			sqlDB.SetConnMaxIdleTime(1 * time.Minute)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			if pingErr := sqlDB.PingContext(ctx); pingErr != nil {
+				logx.Errorf("mysql ping failed: %v", pingErr)
+			}
+		}
+	}
+	var conn sqlx.SqlConn
+	if c.MySQL.DSN != "" {
+		conn = sqlx.NewMysql(c.MySQL.DSN)
+	}
+
+	// init models
+	var usersModel model.UsersModel
+	var userIdentitiesModel model.UserIdentitiesModel
+	var projectsModel model.ProjectsModel
+	var projectMembersModel model.ProjectMembersModel
+	var projectFilesModel model.ProjectFilesModel
+	var filesModel model.FilesModel
+	var fileVersionsModel model.FileVersionsModel
+	var adminsModel model.AdminsModel
+	var softwareTemplatesModel model.SoftwareTemplatesModel
+	var workspaceCanvasModel model.WorkspaceCanvasModel
+	var workspaceLayerModel model.WorkspaceLayerModel
+	if db != nil && conn != nil {
+		usersModel = model.NewUsersModel(db, conn)
+		userIdentitiesModel = model.NewUserIdentitiesModel(db, conn)
+		projectsModel = model.NewProjectsModel(db, conn)
+		projectMembersModel = model.NewProjectMembersModel(db, conn)
+		projectFilesModel = model.NewProjectFilesModel(db, conn)
+		filesModel = model.NewFilesModel(db, conn)
+		fileVersionsModel = model.NewFileVersionsModel(db, conn)
+		adminsModel = model.NewAdminsModel(db, conn)
+		softwareTemplatesModel = model.NewSoftwareTemplatesModel(db, conn)
+		workspaceCanvasModel = model.NewWorkspaceCanvasModel(db, conn)
+		workspaceLayerModel = model.NewWorkspaceLayerModel(db, conn)
+	}
+
+	if db != nil && usersModel != nil {
+		ensureSuperUserFromEnv(db, usersModel)
+	}
+
+	ctx := &ServiceContext{
+		Config:                 c,
+		DB:                     db,
+		Conn:                   conn,
+		UsersModel:             usersModel,
+		UserIdentitiesModel:    userIdentitiesModel,
+		ProjectsModel:          projectsModel,
+		ProjectMembersModel:    projectMembersModel,
+		ProjectFilesModel:      projectFilesModel,
+		FilesModel:             filesModel,
+		FileVersionsModel:      fileVersionsModel,
+		AdminsModel:            adminsModel,
+		SoftwareTemplatesModel: softwareTemplatesModel,
+		WorkspaceCanvasModel:   workspaceCanvasModel,
+		WorkspaceLayerModel:    workspaceLayerModel,
+	}
+
+	provider := ctx.StorageProvider()
+	expireSeconds := ctx.StorageExpireSeconds()
+
+	// init object store
+	var ossClient *oss.Client
+	var bucket *oss.Bucket
+
+	if provider == "s3" {
+		if strings.TrimSpace(c.S3.Endpoint) != "" && strings.TrimSpace(c.S3.Bucket) != "" {
+			s3Store, err := storage.NewS3Store(
+				c.S3.Endpoint,
+				c.S3.UseSSL,
+				c.S3.Region,
+				c.S3.AccessKeyId,
+				c.S3.AccessKeySecret,
+				c.S3.Bucket,
+				expireSeconds,
+			)
+			if err != nil {
+				logx.Errorf("s3 init failed: %v", err)
+			} else {
+				ctx.ObjectStore = s3Store
+			}
+		}
+	} else {
+		if c.OSS.Endpoint != "" && c.OSS.Bucket != "" {
+			endpoint := normalizeOSSEndpoint(c.OSS.Endpoint, c.OSS.Bucket)
+			ossClient, err = oss.New(endpoint, c.OSS.AccessKeyId, c.OSS.AccessKeySecret)
+			if err != nil {
+				logx.Errorf("oss init failed: %v", err)
+			} else {
+				bucket, err = ossClient.Bucket(c.OSS.Bucket)
+				if err != nil {
+					logx.Errorf("oss bucket init failed: %v", err)
+				}
+			}
+		}
+		ctx.ObjectStore = storage.NewOSSStore(bucket, c.OSS.Endpoint, c.OSS.Bucket, c.OSS.AccessKeyId, c.OSS.AccessKeySecret, expireSeconds)
+	}
+
+	ctx.OSSClient = ossClient
+	ctx.OSSBucket = bucket
+
+	return ctx
+}
+
+func md5HexLower(value string) string {
+	sum := md5.Sum([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
+func isHex32(value string) bool {
+	if len(value) != 32 {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func ensureUsersIsSuperColumn(db *gorm.DB) {
+	var count int64
+	if err := db.Raw(
+		"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'is_super'",
+	).Scan(&count).Error; err != nil {
+		logx.Errorf("check users.is_super failed: %v", err)
+		return
+	}
+	if count > 0 {
+		return
+	}
+	if err := db.Exec("ALTER TABLE `users` ADD COLUMN `is_super` TINYINT(1) NOT NULL DEFAULT 0").Error; err != nil {
+		logx.Errorf("add users.is_super failed: %v", err)
+	}
+}
+
+func ensureSuperUserFromEnv(db *gorm.DB, usersModel model.UsersModel) {
+	superUserEnv := strings.TrimSpace(os.Getenv("SPARKX_SUPER_USER"))
+	if superUserEnv == "" {
+		return
+	}
+
+	var superUser struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Username string `json:"username"`
+	}
+	if err := json.Unmarshal([]byte(superUserEnv), &superUser); err != nil {
+		logx.Errorf("invalid SPARKX_SUPER_USER JSON: %v", err)
+		return
+	}
+
+	email := strings.TrimSpace(superUser.Email)
+	password := superUser.Password
+	passwordHash := strings.TrimSpace(os.Getenv("SPARKX_SUPER_PASSWORD_HASH"))
+	username := strings.TrimSpace(superUser.Username)
+	if email == "" {
+		return
+	}
+
+	ensureUsersIsSuperColumn(db)
+
+	targetPasswordHash := ""
+	if passwordHash != "" || strings.TrimSpace(password) != "" {
+		if passwordHash != "" {
+			if !isHex32(passwordHash) {
+				logx.Errorf("invalid SPARKX_SUPER_PASSWORD_HASH: must be 32-char hex md5")
+				return
+			}
+			targetPasswordHash = strings.ToLower(passwordHash)
+		} else {
+			targetPasswordHash = md5HexLower(password)
+		}
+	}
+
+	ctx := context.Background()
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var u model.Users
+		findErr := tx.Where("email = ?", email).First(&u).Error
+		if findErr != nil && !errors.Is(findErr, gorm.ErrRecordNotFound) {
+			return findErr
+		}
+
+		targetUsername := strings.TrimSpace(username)
+		if targetUsername == "" {
+			if idx := strings.Index(email, "@"); idx > 0 {
+				targetUsername = email[:idx]
+			} else {
+				targetUsername = email
+			}
+		}
+
+		if errors.Is(findErr, gorm.ErrRecordNotFound) {
+			if targetPasswordHash == "" {
+				logx.Errorf("SPARKX_SUPER_PASSWORD(_HASH) is required when creating super user")
+				return nil
+			}
+			if err := tx.Create(&model.Users{
+				Username:     targetUsername,
+				Email:        email,
+				PasswordHash: targetPasswordHash,
+				IsSuper:      true,
+			}).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Model(&model.Users{}).
+			Where("is_super = ?", true).
+			Where("email <> ?", email).
+			Update("is_super", false).Error; err != nil {
+			return err
+		}
+
+		updates := map[string]interface{}{
+			"is_super": true,
+		}
+		if targetPasswordHash != "" {
+			updates["password_hash"] = targetPasswordHash
+		}
+		if strings.TrimSpace(username) != "" {
+			updates["username"] = targetUsername
+		}
+
+		return tx.Model(&model.Users{}).Where("email = ?", email).Updates(updates).Error
+	})
+	if err != nil {
+		logx.Errorf("ensure super user failed: %v", err)
+	}
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "minimax/MiniMax-M2.1",
+  "instructions": ["AGENTS.md"],
+  "server": {
+    "port": 4096,
+    "hostname": "0.0.0.0",
+    "cors": ["*"]
+  },
+  "permission": {
+    "bash": "allow",
+    "edit": "allow",
+    "write": "allow",
+    "generate_image_file": "ask",
+    "read": "allow",
+    "glob": "allow",
+    "list": "allow",
+    "grep": "allow",
+    "skill": "allow",
+    "todowrite": "allow",
+    "todoread": "allow",
+    "question": "allow"
+  },
+  "logLevel": "DEBUG",
+  "provider": {
+    "minimax": {
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "https://api.minimaxi.com/anthropic/v1",
+        "apiKey": "sk-cp-L-Qpl2uQjh9pZC92eiiYHY2yKtfcxeoKp6VF_ksNSLzi05TKfLqMxDB6ENCTy-uKURui99DKDbMe7Ev2ZFiT-LFNbbtixFSAU159DDkL8bPQLxnDwEGoSXw"
+      },
+      "models": {
+        "MiniMax-M2.5": {
+          "name": "MiniMax-M2.5"
+        },
+        "MiniMax-M2.1": {
+          "name": "MiniMax-M2.1"
+        }
+      }
+    }
+  }
+}

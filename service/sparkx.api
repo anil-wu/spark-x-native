@@ -1,0 +1,1134 @@
+info (
+	title:   "sparkx api"
+	desc:    "Spark-X 项目 API 服务"
+	version: "v1"
+)
+
+type (
+	BaseResp {
+		code int32  `json:"code"`
+		msg  string `json:"msg"`
+	}
+	PageReq {
+		page     int64 `form:"page,default=1"`
+		pageSize int64 `form:"pageSize,default=20"`
+	}
+	PageResp {
+		page     int64 `json:"page"`
+		pageSize int64 `json:"pageSize"`
+		total    int64 `json:"total"`
+	}
+	// 用户
+	LoginReq {
+		loginType string `json:"loginType"` // email | google
+		email     string `json:"email,optional"`
+		password  string `json:"password,optional"`
+		idToken   string `json:"idToken,optional"`
+	}
+	LoginResp {
+		userId  int64  `json:"userId"`
+		created bool   `json:"created"` // 如果是注册逻辑则为 true
+		token   string `json:"token"`
+	}
+	UpdateUserReq {
+		id       int64  `path:"id"`
+		username string `json:"username"`
+	}
+	UserInfoResp {
+		id           int64  `json:"id"`
+		username     string `json:"username"`
+		email        string `json:"email"`
+		passwordHash string `json:"passwordHash"`
+		createdAt    string `json:"createdAt"`
+		updatedAt    string `json:"updatedAt"`
+	}
+	UserListResp {
+		list []UserInfoResp `json:"list"`
+		page PageResp       `json:"page"`
+	}
+	GetUserByEmailReq {
+		email string `path:"email"`
+	}
+	// 项目
+	CreateProjectReq {
+		userId      int64  `json:"userId"`
+		name        string `json:"name"`
+		description string `json:"description"`
+	}
+	ProjectResp {
+		id          int64  `json:"id"`
+		name        string `json:"name"`
+		description string `json:"description"`
+		coverFileId int64  `json:"coverFileId"`
+		ownerId     int64  `json:"ownerId"`
+		status      string `json:"status"` // active | archived
+		createdAt   string `json:"createdAt"`
+		updatedAt   string `json:"updatedAt"`
+	}
+	UpdateProjectReq {
+		id          int64  `path:"id"`
+		name        string `json:"name,optional"`
+		description string `json:"description,optional"`
+		coverFileId int64  `json:"coverFileId,optional"`
+		status      string `json:"status,optional"` // active | archived
+	}
+	ProjectListResp {
+		list []ProjectResp `json:"list"`
+		page PageResp      `json:"page"`
+	}
+	GetProjectReq {
+		id int64 `path:"id"`
+	}
+	DeleteProjectReq {
+		id int64 `path:"id"`
+	}
+	InviteMemberReq {
+		userId        int64  `json:"userId"` // 发起者
+		invitedUserId int64  `json:"invitedUserId"` // 被邀请者
+		projectId     int64  `path:"id"`
+		role          string `json:"role"` // owner | admin | developer | viewer
+	}
+	// 软件工程
+	CreateSoftwareReq {
+		projectId       int64  `path:"projectId"`
+		name            string `json:"name"`
+		description     string `json:"description,optional"`
+		templateId      int64  `json:"templateId,optional"`
+		technologyStack string `json:"technologyStack,optional"`
+		status          string `json:"status,optional"`
+	}
+	CreateSoftwareResp {
+		softwareId      int64  `json:"softwareId"`
+		projectId       int64  `json:"projectId"`
+		name            string `json:"name"`
+		description     string `json:"description"`
+		templateId      int64  `json:"templateId"`
+		technologyStack string `json:"technologyStack"`
+		status          string `json:"status"`
+		createdBy       int64  `json:"createdBy"`
+		createdAt       string `json:"createdAt"`
+	}
+	SoftwareItem {
+		id              int64  `json:"id"`
+		projectId       int64  `json:"projectId"`
+		name            string `json:"name"`
+		description     string `json:"description"`
+		templateId      int64  `json:"templateId"`
+		technologyStack string `json:"technologyStack"`
+		status          string `json:"status"`
+		createdBy       int64  `json:"createdBy"`
+		createdAt       string `json:"createdAt"`
+		updatedAt       string `json:"updatedAt"`
+	}
+	SoftwareListResp {
+		list []SoftwareItem `json:"list"`
+		page PageResp       `json:"page"`
+	}
+	ListProjectSoftwaresReq {
+		projectId int64 `path:"projectId"`
+		page      int64 `form:"page,default=1"`
+		pageSize  int64 `form:"pageSize,default=20"`
+	}
+	CreateSoftwareManifestReq {
+		id                    int64  `json:"id,optional"`
+		projectId             int64  `json:"projectId"`
+		softwareId            int64  `json:"softwareId"`
+		manifestFileId        int64  `json:"manifestFileId"`
+		manifestFileVersionId int64  `json:"manifestFileVersionId"`
+		versionDescription    string `json:"versionDescription,optional"`
+	}
+	CreateSoftwareManifestResp {
+		manifestId            int64  `json:"manifestId"`
+		projectId             int64  `json:"projectId"`
+		softwareId            int64  `json:"softwareId"`
+		manifestFileId        int64  `json:"manifestFileId"`
+		manifestFileVersionId int64  `json:"manifestFileVersionId"`
+		versionNumber         int64  `json:"versionNumber"`
+		versionDescription    string `json:"versionDescription"`
+		createdBy             int64  `json:"createdBy"`
+		createdAt             string `json:"createdAt"`
+	}
+	ListLatestSoftwareManifestsReq {
+		projectId   int64  `path:"projectId"`
+		softwareIds string `form:"software_ids"`
+	}
+	LatestSoftwareManifestItem {
+		softwareId            int64  `json:"softwareId"`
+		hasRecord             bool   `json:"hasRecord"`
+		manifestId            int64  `json:"manifestId"`
+		manifestFileId        int64  `json:"manifestFileId"`
+		manifestFileVersionId int64  `json:"manifestFileVersionId"`
+		versionNumber         int64  `json:"versionNumber"`
+		versionDescription    string `json:"versionDescription"`
+		createdBy             int64  `json:"createdBy"`
+		createdAt             string `json:"createdAt"`
+	}
+	LatestSoftwareManifestListResp {
+		list []LatestSoftwareManifestItem `json:"list"`
+	}
+	CreateBuildVersionReq {
+		id                        int64  `json:"id,optional"`
+		projectId                 int64  `json:"projectId"`
+		softwareManifestId        int64  `json:"softwareManifestId"`
+		versionNumber             int64  `json:"versionNumber,optional"`
+		description               string `json:"description,optional"`
+		buildVersionFileId        int64  `json:"buildVersionFileId"`
+		buildVersionFileVersionId int64  `json:"buildVersionFileVersionId"`
+	}
+	CreateBuildVersionResp {
+		buildVersionId            int64  `json:"buildVersionId"`
+		projectId                 int64  `json:"projectId"`
+		softwareManifestId        int64  `json:"softwareManifestId"`
+		versionNumber             int64  `json:"versionNumber"`
+		description               string `json:"description"`
+		buildVersionFileId        int64  `json:"buildVersionFileId"`
+		buildVersionFileVersionId int64  `json:"buildVersionFileVersionId"`
+		createdBy                 int64  `json:"createdBy"`
+		createdAt                 string `json:"createdAt"`
+	}
+	ListBuildVersionsReq {
+		projectId int64 `path:"projectId"`
+		page      int64 `form:"page,default=1"`
+		pageSize  int64 `form:"pageSize,default=20"`
+	}
+	BuildVersionItem {
+		buildVersionId            int64  `json:"buildVersionId"`
+		projectId                 int64  `json:"projectId"`
+		softwareManifestId        int64  `json:"softwareManifestId"`
+		versionNumber             int64  `json:"versionNumber"`
+		description               string `json:"description"`
+		buildVersionFileId        int64  `json:"buildVersionFileId"`
+		buildVersionFileVersionId int64  `json:"buildVersionFileVersionId"`
+		createdBy                 int64  `json:"createdBy"`
+		createdAt                 string `json:"createdAt"`
+	}
+	BuildVersionListResp {
+		list []BuildVersionItem `json:"list"`
+		page PageResp           `json:"page"`
+	}
+	CreateReleaseReq {
+		id                           int64  `json:"id,optional"`
+		projectId                    int64  `json:"projectId"`
+		buildVersionId               int64  `json:"buildVersionId"`
+		releaseManifestFileId        int64  `json:"releaseManifestFileId"`
+		releaseManifestFileVersionId int64  `json:"releaseManifestFileVersionId"`
+		name                         string `json:"name"`
+		channel                      string `json:"channel"`
+		platform                     string `json:"platform"`
+		status                       string `json:"status,optional"`
+		versionTag                   string `json:"versionTag,optional"`
+		releaseNotes                 string `json:"releaseNotes,optional"`
+		publishedAt                  string `json:"publishedAt,optional"`
+	}
+	CreateReleaseResp {
+		releaseId                    int64  `json:"releaseId"`
+		projectId                    int64  `json:"projectId"`
+		buildVersionId               int64  `json:"buildVersionId"`
+		releaseManifestFileId        int64  `json:"releaseManifestFileId"`
+		releaseManifestFileVersionId int64  `json:"releaseManifestFileVersionId"`
+		name                         string `json:"name"`
+		channel                      string `json:"channel"`
+		platform                     string `json:"platform"`
+		status                       string `json:"status"`
+		versionTag                   string `json:"versionTag"`
+		releaseNotes                 string `json:"releaseNotes"`
+		createdBy                    int64  `json:"createdBy"`
+		createdAt                    string `json:"createdAt"`
+		publishedAt                  string `json:"publishedAt"`
+	}
+	// 文件与版本
+	PreUploadReq {
+		projectId    int64  `json:"projectId"`
+		name         string `json:"name"`
+		fileCategory string `json:"fileCategory"` // text | image | video | audio | binary | archive
+		fileFormat   string `json:"fileFormat"` // 文件格式，如 png, jpg, mp4, mp3, txt 等
+		sizeBytes    int64  `json:"sizeBytes"`
+		hash         string `json:"hash"`
+		contentType  string `json:"contentType,optional"` // 上传文件的 Content-Type，如 text/plain, image/png 等
+	}
+	PreUploadResp {
+		uploadUrl     string `json:"uploadUrl"`
+		fileId        int64  `json:"fileId"`
+		versionId     int64  `json:"versionId"`
+		versionNumber int64  `json:"versionNumber"`
+		contentType   string `json:"contentType"` // 上传时必须使用的 Content-Type
+	}
+	ProjectFileItem {
+		id               int64  `json:"id"`
+		projectId        int64  `json:"projectId"`
+		name             string `json:"name"`
+		fileCategory     string `json:"fileCategory"`
+		fileFormat       string `json:"fileFormat"`
+		currentVersionId int64  `json:"currentVersionId"`
+		versionId        int64  `json:"versionId"`
+		versionNumber    int64  `json:"versionNumber"`
+		sizeBytes        int64  `json:"sizeBytes"`
+		hash             string `json:"hash"`
+		createdAt        string `json:"createdAt"`
+		storageKey       string `json:"storageKey"`
+	}
+	ProjectFileListResp {
+		list []ProjectFileItem `json:"list"`
+		page PageResp          `json:"page"`
+	}
+	ListProjectFilesReq {
+		projectId int64 `path:"projectId"`
+		page      int64 `form:"page,default=1"`
+		pageSize  int64 `form:"pageSize,default=20"`
+	}
+	FileVersionItem {
+		id            int64  `json:"id"`
+		fileId        int64  `json:"fileId"`
+		versionNumber int64  `json:"versionNumber"`
+		sizeBytes     int64  `json:"sizeBytes"`
+		hash          string `json:"hash"`
+		storageKey    string `json:"storageKey"`
+		createdAt     string `json:"createdAt"`
+		updatedAt     string `json:"updatedAt"`
+		createdBy     int64  `json:"createdBy"`
+	}
+	FileVersionListResp {
+		list []FileVersionItem `json:"list"`
+		page PageResp          `json:"page"`
+	}
+	ListFileVersionsReq {
+		id       int64 `path:"id"`
+		page     int64 `form:"page,default=1"`
+		pageSize int64 `form:"pageSize,default=20"`
+	}
+	// 文件下载
+	DownloadFileReq {
+		id            int64 `path:"id"`
+		versionId     int64 `form:"versionId,optional"`
+		versionNumber int64 `form:"versionNumber,optional"`
+	}
+	DownloadFileResp {
+		downloadUrl string `json:"downloadUrl"`
+		expiresAt   string `json:"expiresAt"`
+	}
+	// 文件删除
+	DeleteFileReq {
+		id int64 `path:"id"`
+	}
+	// 版本回滚
+	RollbackVersionReq {
+		id            int64 `path:"id"`
+		versionNumber int64 `json:"versionNumber"`
+	}
+	// 文件内容获取（代理访问）
+	GetFileContentReq {
+		id int64 `path:"id"`
+	}
+	// 管理员
+	AdminLoginReq {
+		username string `json:"username"`
+		password string `json:"password"`
+	}
+	AdminLoginResp {
+		adminId int64  `json:"adminId"`
+		role    string `json:"role"`
+		token   string `json:"token"`
+	}
+	AdminInfoResp {
+		id          int64  `json:"id"`
+		username    string `json:"username"`
+		role        string `json:"role"`
+		status      string `json:"status"`
+		lastLoginAt string `json:"lastLoginAt"`
+		createdAt   string `json:"createdAt"`
+		updatedAt   string `json:"updatedAt"`
+	}
+	CreateAdminReq {
+		username string `json:"username"`
+		password string `json:"password"`
+		role     string `json:"role,default=admin"` // super_admin | admin
+	}
+	UpdateAdminReq {
+		id       int64  `path:"id"`
+		password string `json:"password,optional"`
+		role     string `json:"role,optional"` // super_admin | admin
+		status   string `json:"status,optional"` // active | disabled
+	}
+	DeleteAdminReq {
+		id int64 `path:"id"`
+	}
+	ListAdminsReq {
+		page     int64 `form:"page,default=1"`
+		pageSize int64 `form:"pageSize,default=20"`
+	}
+	AdminListResp {
+		list []AdminInfoResp `json:"list"`
+		page PageResp        `json:"page"`
+	}
+	AdminCreateUserReq {
+		username string `json:"username"`
+		email    string `json:"email"`
+		password string `json:"password"`
+	}
+	AdminDeleteUserReq {
+		id int64 `path:"id"`
+	}
+	AdminUpdateUserReq {
+		id       int64  `path:"id"`
+		username string `json:"username,optional"`
+		email    string `json:"email,optional"`
+		password string `json:"password,optional"`
+	}
+	AdminCreateProjectReq {
+		name        string `json:"name"`
+		description string `json:"description,optional"`
+		ownerId     int64  `json:"ownerId"`
+	}
+	AdminDeleteProjectReq {
+		id int64 `path:"id"`
+	}
+	AdminUpdateProjectReq {
+		id          int64  `path:"id"`
+		name        string `json:"name,optional"`
+		description string `json:"description,optional"`
+		status      string `json:"status,optional"` // active | archived
+	}
+	// 软件模板
+	CreateSoftwareTemplateReq {
+		name          string `json:"name"`
+		description   string `json:"description,optional"`
+		archiveFileId int64  `json:"archiveFileId,optional"`
+	}
+	UpdateSoftwareTemplateReq {
+		id            int64  `path:"id"`
+		name          string `json:"name,optional"`
+		description   string `json:"description,optional"`
+		archiveFileId int64  `json:"archiveFileId,optional"`
+	}
+	GetSoftwareTemplateReq {
+		id int64 `path:"id"`
+	}
+	GetSoftwareTemplateByNameReq {
+		name string `path:"name"`
+	}
+	DeleteSoftwareTemplateReq {
+		id int64 `path:"id"`
+	}
+	SoftwareTemplateResp {
+		id            int64  `json:"id"`
+		name          string `json:"name"`
+		description   string `json:"description"`
+		archiveFileId int64  `json:"archiveFileId"`
+		createdBy     int64  `json:"createdBy"`
+		createdAt     string `json:"createdAt"`
+		updatedAt     string `json:"updatedAt"`
+	}
+	SoftwareTemplateListResp {
+		list []SoftwareTemplateResp `json:"list"`
+		page PageResp               `json:"page"`
+	}
+	// LLM Providers
+	CreateLlmProviderReq {
+		name        string `json:"name"`
+		baseUrl     string `json:"baseUrl"`
+		apiKey      string `json:"apiKey,optional"`
+		description string `json:"description,optional"`
+	}
+	UpdateLlmProviderReq {
+		id          int64  `path:"id"`
+		name        string `json:"name,optional"`
+		baseUrl     string `json:"baseUrl,optional"`
+		apiKey      string `json:"apiKey,optional"`
+		clearApiKey bool   `json:"clearApiKey,optional"`
+		description string `json:"description,optional"`
+	}
+	GetLlmProviderReq {
+		id int64 `path:"id"`
+	}
+	DeleteLlmProviderReq {
+		id int64 `path:"id"`
+	}
+	LlmProviderResp {
+		id          int64  `json:"id"`
+		name        string `json:"name"`
+		baseUrl     string `json:"baseUrl"`
+		hasApiKey   bool   `json:"hasApiKey"`
+		description string `json:"description"`
+		createdAt   string `json:"createdAt"`
+		updatedAt   string `json:"updatedAt"`
+	}
+	LlmProviderListResp {
+		list []LlmProviderResp `json:"list"`
+		page PageResp          `json:"page"`
+	}
+	// LLM Models
+	CreateLlmModelReq {
+		providerId       int64   `json:"providerId"`
+		modelName        string  `json:"modelName"`
+		modelType        string  `json:"modelType"` // llm | vlm | embedding
+		maxInputTokens   int64   `json:"maxInputTokens"`
+		maxOutputTokens  int64   `json:"maxOutputTokens"`
+		supportStream    bool    `json:"supportStream"`
+		supportJson      bool    `json:"supportJson"`
+		priceInputPer1k  float64 `json:"priceInputPer1k"`
+		priceOutputPer1k float64 `json:"priceOutputPer1k"`
+	}
+	UpdateLlmModelReq {
+		id               int64    `path:"id"`
+		providerId       *int64   `json:"providerId,optional"`
+		modelName        string   `json:"modelName,optional"`
+		modelType        string   `json:"modelType,optional"` // llm | vlm | embedding
+		maxInputTokens   *int64   `json:"maxInputTokens,optional"`
+		maxOutputTokens  *int64   `json:"maxOutputTokens,optional"`
+		supportStream    *bool    `json:"supportStream,optional"`
+		supportJson      *bool    `json:"supportJson,optional"`
+		priceInputPer1k  *float64 `json:"priceInputPer1k,optional"`
+		priceOutputPer1k *float64 `json:"priceOutputPer1k,optional"`
+	}
+	GetLlmModelReq {
+		id int64 `path:"id"`
+	}
+	DeleteLlmModelReq {
+		id int64 `path:"id"`
+	}
+	ListLlmModelsReq {
+		providerId int64  `form:"providerId,optional"`
+		modelType  string `form:"modelType,optional"` // llm | vlm | embedding
+		page       int64  `form:"page,default=1"`
+		pageSize   int64  `form:"pageSize,default=20"`
+	}
+	LlmModelResp {
+		id               int64   `json:"id"`
+		providerId       int64   `json:"providerId"`
+		modelName        string  `json:"modelName"`
+		modelType        string  `json:"modelType"`
+		maxInputTokens   int64   `json:"maxInputTokens"`
+		maxOutputTokens  int64   `json:"maxOutputTokens"`
+		supportStream    bool    `json:"supportStream"`
+		supportJson      bool    `json:"supportJson"`
+		priceInputPer1k  float64 `json:"priceInputPer1k"`
+		priceOutputPer1k float64 `json:"priceOutputPer1k"`
+		createdAt        string  `json:"createdAt"`
+		updatedAt        string  `json:"updatedAt"`
+	}
+	LlmModelListResp {
+		list []LlmModelResp `json:"list"`
+		page PageResp       `json:"page"`
+	}
+	// LLM Usage Logs
+	ListLlmUsageLogsReq {
+		projectId  int64 `form:"projectId,optional"`
+		llmModelId int64 `form:"llmModelId,optional"`
+		page       int64 `form:"page,default=1"`
+		pageSize   int64 `form:"pageSize,default=20"`
+	}
+	LlmUsageLogResp {
+		id           int64   `json:"id"`
+		llmModelId   int64   `json:"llmModelId"`
+		projectId    int64   `json:"projectId"`
+		inputTokens  int64   `json:"inputTokens"`
+		outputTokens int64   `json:"outputTokens"`
+		cacheHit     bool    `json:"cacheHit"`
+		costUsd      float64 `json:"costUsd"`
+		createdAt    string  `json:"createdAt"`
+	}
+	LlmUsageLogListResp {
+		list []LlmUsageLogResp `json:"list"`
+		page PageResp          `json:"page"`
+	}
+	// Agents
+	CreateAgentReq {
+		name        string `json:"name"`
+		description string `json:"description,optional"`
+		instruction string `json:"instruction,optional"`
+		agentType   string `json:"agentType"` // code | asset | design | test | build | ops | project
+	}
+	UpdateAgentReq {
+		id          int64  `path:"id"`
+		name        string `json:"name,optional"`
+		description string `json:"description,optional"`
+		instruction string `json:"instruction,optional"`
+		agentType   string `json:"agentType,optional"` // code | asset | design | test | build | ops | project
+	}
+	GetAgentReq {
+		id int64 `path:"id"`
+	}
+	GetAgentByNameReq {
+		name string `path:"name"`
+	}
+	DeleteAgentReq {
+		id int64 `path:"id"`
+	}
+	ListAgentsReq {
+		agentType string `form:"agentType,optional"` // code | asset | design | test | build | ops | project
+		page      int64  `form:"page,default=1"`
+		pageSize  int64  `form:"pageSize,default=20"`
+	}
+	ListAgentConfigsReq {
+		agentType string `form:"agentType,optional"` // code | asset | design | test | build | ops | project
+	}
+	AgentResp {
+		id          int64  `json:"id"`
+		name        string `json:"name"`
+		description string `json:"description"`
+		instruction string `json:"instruction"`
+		agentType   string `json:"agentType"`
+		createdAt   string `json:"createdAt"`
+	}
+	AgentListResp {
+		list []AgentResp `json:"list"`
+		page PageResp    `json:"page"`
+	}
+	AgentConfigResp {
+		agent    AgentResp          `json:"agent"`
+		bindings []AgentBindingResp `json:"bindings"`
+	}
+	AgentModelResp {
+		llmModelId        int64  `json:"llmModelId"`
+		providerId        int64  `json:"providerId"`
+		providerName      string `json:"providerName"`
+		providerBaseUrl   string `json:"providerBaseUrl"`
+		providerApiKey    string `json:"providerApiKey"`
+		providerHasApiKey bool   `json:"providerHasApiKey"`
+		modelName         string `json:"modelName"`
+		modelType         string `json:"modelType"`
+	}
+	AgentInfoBindingResp {
+		id         int64 `json:"id"`
+		priority   int64 `json:"priority"`
+		isActive   bool  `json:"isActive"`
+		modelIndex int64 `json:"modelIndex"`
+	}
+	AgentInfoResp {
+		agent    AgentResp              `json:"agent"`
+		bindings []AgentInfoBindingResp `json:"bindings"`
+	}
+	AgentConfigListResp {
+		models     []AgentModelResp `json:"models"`
+		agentinfos []AgentInfoResp  `json:"agentinfos"`
+	}
+	// Agent bindings
+	ListAgentBindingsReq {
+		agentId int64 `path:"id"`
+	}
+	CreateAgentBindingReq {
+		agentId    int64 `path:"id"`
+		llmModelId int64 `json:"llmModelId"`
+		priority   int64 `json:"priority,optional"`
+		isActive   *bool `json:"isActive,optional"`
+	}
+	UpdateAgentBindingReq {
+		id         int64  `path:"id"`
+		llmModelId int64  `json:"llmModelId,optional"`
+		priority   *int64 `json:"priority,optional"`
+		isActive   *bool  `json:"isActive,optional"`
+	}
+	DeleteAgentBindingReq {
+		id int64 `path:"id"`
+	}
+	AgentBindingResp {
+		id                int64  `json:"id"`
+		agentId           int64  `json:"agentId"`
+		llmModelId        int64  `json:"llmModelId"`
+		priority          int64  `json:"priority"`
+		isActive          bool   `json:"isActive"`
+		createdAt         string `json:"createdAt"`
+		providerId        int64  `json:"providerId"`
+		providerName      string `json:"providerName"`
+		providerBaseUrl   string `json:"providerBaseUrl"`
+		providerApiKey    string `json:"providerApiKey"`
+		providerHasApiKey bool   `json:"providerHasApiKey"`
+		modelName         string `json:"modelName"`
+		modelType         string `json:"modelType"`
+	}
+	AgentBindingListResp {
+		list []AgentBindingResp `json:"list"`
+	}
+)
+
+@server (
+	group:  auth
+	prefix: /api/v1
+)
+service sparkx-api {
+	@handler Login
+	post /auth/login (LoginReq) returns (LoginResp)
+}
+
+@server (
+	group:  users
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler GetUserByEmail
+	get /users/email/:email (GetUserByEmailReq) returns (UserInfoResp)
+
+	@handler UpdateUser
+	put /users/:id (UpdateUserReq) returns (BaseResp)
+
+	@handler ListUsers
+	get /users (PageReq) returns (UserListResp)
+}
+
+@server (
+	group:  projects
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler CreateProject
+	post /projects (CreateProjectReq) returns (ProjectResp)
+
+	@handler DeleteProject
+	delete /projects/:id (DeleteProjectReq) returns (BaseResp)
+
+	@handler UpdateProject
+	put /projects/:id (UpdateProjectReq) returns (BaseResp)
+
+	@handler ListProjects
+	get /projects (PageReq) returns (ProjectListResp)
+
+	@handler GetProject
+	get /projects/:id (GetProjectReq) returns (ProjectResp)
+
+	@handler InviteMember
+	post /projects/:id/invite (InviteMemberReq) returns (BaseResp)
+}
+
+@server (
+	group:  files
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler PreUploadFile
+	post /files/preupload (PreUploadReq) returns (PreUploadResp)
+
+	@handler ListProjectFiles
+	get /projects/:projectId/files (ListProjectFilesReq) returns (ProjectFileListResp)
+
+	@handler ListFileVersions
+	get /files/:id/versions (ListFileVersionsReq) returns (FileVersionListResp)
+
+	@handler DownloadFile
+	get /files/:id/download (DownloadFileReq) returns (DownloadFileResp)
+
+	@handler DeleteFile
+	delete /files/:id (DeleteFileReq) returns (BaseResp)
+
+	@handler RollbackVersion
+	post /files/:id/rollback (RollbackVersionReq) returns (BaseResp)
+
+	@handler GetFileContent
+	get /files/:id/content (GetFileContentReq)
+}
+
+// 模板下载接口 - 需要普通用户认证
+@server (
+	group:  files
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler DownloadTemplate
+	get /files/:id/download-template (DownloadFileReq) returns (DownloadFileResp)
+}
+
+@server (
+	group:  files
+	prefix: /api/v1/admin
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler PreUploadFileAdmin
+	post /files/preupload (PreUploadReq) returns (PreUploadResp)
+}
+
+@server (
+	group:  softwares
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler ListProjectSoftwares
+	get /projects/:projectId/softwares (ListProjectSoftwaresReq) returns (SoftwareListResp)
+
+	@handler ListLatestSoftwareManifests
+	get /projects/:projectId/software_manifests (ListLatestSoftwareManifestsReq) returns (LatestSoftwareManifestListResp)
+
+	@handler CreateSoftware
+	post /projects/:projectId/softwares (CreateSoftwareReq) returns (CreateSoftwareResp)
+
+	@handler CreateSoftwareManifest
+	post /software-manifests (CreateSoftwareManifestReq) returns (CreateSoftwareManifestResp)
+}
+
+@server (
+	group:  softwares
+	prefix: /api/v1
+)
+service sparkx-api {
+	@handler ListSoftwareTemplatesPublic
+	get /software-templates (PageReq) returns (SoftwareTemplateListResp)
+
+	@handler GetSoftwareTemplateByNamePublic
+	get /software-templates/by-name/:name (GetSoftwareTemplateByNameReq) returns (SoftwareTemplateResp)
+
+	@handler GetSoftwareTemplatePublic
+	get /software-templates/:id (GetSoftwareTemplateReq) returns (SoftwareTemplateResp)
+}
+
+@server (
+	group:  builds
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler ListBuildVersions
+	get /projects/:projectId/build-versions (ListBuildVersionsReq) returns (BuildVersionListResp)
+
+	@handler CreateBuildVersion
+	post /build-versions (CreateBuildVersionReq) returns (CreateBuildVersionResp)
+
+	@handler CreateRelease
+	post /releases (CreateReleaseReq) returns (CreateReleaseResp)
+}
+
+@server (
+	group:  agents
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler ListAvailableAgents
+	get /agents (ListAgentsReq) returns (AgentListResp)
+
+	@handler ListAgentConfigs
+	get /agents/configs (ListAgentConfigsReq) returns (AgentConfigListResp)
+
+	@handler GetAvailableAgent
+	get /agents/id/:id (GetAgentReq) returns (AgentResp)
+
+	@handler ListAvailableAgentBindings
+	get /agents/:id/bindings (ListAgentBindingsReq) returns (AgentBindingListResp)
+
+	@handler GetAgentConfigByName
+	get /agents/by-name/:name (GetAgentByNameReq) returns (AgentConfigResp)
+}
+
+@server (
+	group:  admin_auth
+	prefix: /api/v1/admin
+)
+service sparkx-api {
+	@handler AdminLogin
+	post /login (AdminLoginReq) returns (AdminLoginResp)
+}
+
+@server (
+	group:  admin
+	prefix: /api/v1/admin
+	jwt:    Auth
+)
+service sparkx-api {
+	@handler AdminProfile
+	get /profile returns (AdminInfoResp)
+
+	@handler CreateAdmin
+	post /admins (CreateAdminReq) returns (AdminInfoResp)
+
+	@handler UpdateAdmin
+	put /admins/:id (UpdateAdminReq) returns (BaseResp)
+
+	@handler DeleteAdmin
+	delete /admins/:id (DeleteAdminReq) returns (BaseResp)
+
+	@handler ListAdmins
+	get /admins (ListAdminsReq) returns (AdminListResp)
+
+	@handler AdminCreateUser
+	post /users (AdminCreateUserReq) returns (UserInfoResp)
+
+	@handler AdminDeleteUser
+	delete /users/:id (AdminDeleteUserReq) returns (BaseResp)
+
+	@handler AdminUpdateUser
+	put /users/:id (AdminUpdateUserReq) returns (BaseResp)
+
+	@handler AdminListUsers
+	get /users (PageReq) returns (UserListResp)
+
+	@handler AdminCreateProject
+	post /projects (AdminCreateProjectReq) returns (ProjectResp)
+
+	@handler AdminDeleteProject
+	delete /projects/:id (AdminDeleteProjectReq) returns (BaseResp)
+
+	@handler AdminUpdateProject
+	put /projects/:id (AdminUpdateProjectReq) returns (BaseResp)
+
+	@handler AdminListProjects
+	get /projects (PageReq) returns (ProjectListResp)
+
+	@handler CreateSoftwareTemplate
+	post /software-templates (CreateSoftwareTemplateReq) returns (SoftwareTemplateResp)
+
+	@handler UpdateSoftwareTemplate
+	put /software-templates/:id (UpdateSoftwareTemplateReq) returns (BaseResp)
+
+	@handler DeleteSoftwareTemplate
+	delete /software-templates/:id (DeleteSoftwareTemplateReq) returns (BaseResp)
+
+	@handler GetSoftwareTemplate
+	get /software-templates/:id (GetSoftwareTemplateReq) returns (SoftwareTemplateResp)
+
+	@handler ListSoftwareTemplates
+	get /software-templates (PageReq) returns (SoftwareTemplateListResp)
+
+	@handler CreateLlmProvider
+	post /llm/providers (CreateLlmProviderReq) returns (LlmProviderResp)
+
+	@handler ListLlmProviders
+	get /llm/providers (PageReq) returns (LlmProviderListResp)
+
+	@handler GetLlmProvider
+	get /llm/providers/:id (GetLlmProviderReq) returns (LlmProviderResp)
+
+	@handler UpdateLlmProvider
+	put /llm/providers/:id (UpdateLlmProviderReq) returns (BaseResp)
+
+	@handler DeleteLlmProvider
+	delete /llm/providers/:id (DeleteLlmProviderReq) returns (BaseResp)
+
+	@handler CreateLlmModel
+	post /llm/models (CreateLlmModelReq) returns (LlmModelResp)
+
+	@handler ListLlmModels
+	get /llm/models (ListLlmModelsReq) returns (LlmModelListResp)
+
+	@handler GetLlmModel
+	get /llm/models/:id (GetLlmModelReq) returns (LlmModelResp)
+
+	@handler UpdateLlmModel
+	put /llm/models/:id (UpdateLlmModelReq) returns (BaseResp)
+
+	@handler DeleteLlmModel
+	delete /llm/models/:id (DeleteLlmModelReq) returns (BaseResp)
+
+	@handler ListLlmUsageLogs
+	get /llm/usage-logs (ListLlmUsageLogsReq) returns (LlmUsageLogListResp)
+
+	@handler CreateAgent
+	post /agents (CreateAgentReq) returns (AgentResp)
+
+	@handler ListAgents
+	get /agents (ListAgentsReq) returns (AgentListResp)
+
+	@handler GetAgent
+	get /agents/:id (GetAgentReq) returns (AgentResp)
+
+	@handler UpdateAgent
+	put /agents/:id (UpdateAgentReq) returns (BaseResp)
+
+	@handler DeleteAgent
+	delete /agents/:id (DeleteAgentReq) returns (BaseResp)
+
+	@handler ListAgentBindings
+	get /agents/:id/bindings (ListAgentBindingsReq) returns (AgentBindingListResp)
+
+	@handler CreateAgentBinding
+	post /agents/:id/bindings (CreateAgentBindingReq) returns (AgentBindingResp)
+
+	@handler UpdateAgentBinding
+	put /agent-bindings/:id (UpdateAgentBindingReq) returns (BaseResp)
+
+	@handler DeleteAgentBinding
+	delete /agent-bindings/:id (DeleteAgentBindingReq) returns (BaseResp)
+}
+
+// Workspace 相关类型定义
+type (
+	// 画布
+	CanvasMetadata {
+		gridSize    int64 `json:"gridSize,optional"`
+		snapEnabled bool  `json:"snapEnabled,optional"`
+	}
+	CanvasResp {
+		id              int64           `json:"id"`
+		projectId       int64           `json:"projectId"`
+		name            string          `json:"name"`
+		backgroundColor string          `json:"backgroundColor"`
+		metadata        *CanvasMetadata `json:"metadata,optional"`
+		createdAt       string          `json:"createdAt"`
+		updatedAt       string          `json:"updatedAt"`
+		createdBy       int64           `json:"createdBy"`
+	}
+	GetCanvasReq {
+		projectId int64 `path:"projectId"`
+	}
+	CreateCanvasReq {
+		projectId       int64           `json:"projectId"`
+		name            string          `json:"name,optional"`
+		backgroundColor string          `json:"backgroundColor,optional"`
+		metadata        *CanvasMetadata `json:"metadata,optional"`
+	}
+	CreateCanvasResp {
+		canvasId int64 `json:"canvasId"`
+	}
+	// 图层
+	LayerProperties {
+		// Image 属性
+		src       string  `json:"src,optional"`
+		opacity   float64 `json:"opacity,optional"`
+		blendMode string  `json:"blendMode,optional"`
+		// Shape 属性
+		color           string  `json:"color,optional"`
+		stroke          string  `json:"stroke,optional"`
+		strokeWidth     float64 `json:"strokeWidth,optional"`
+		strokeStyle     string  `json:"strokeStyle,optional"`
+		cornerRadius    float64 `json:"cornerRadius,optional"`
+		sides           int64   `json:"sides,optional"`
+		starInnerRadius float64 `json:"starInnerRadius,optional"`
+		// Text 属性
+		text            string  `json:"text,optional"`
+		fontSize        float64 `json:"fontSize,optional"`
+		fontFamily      string  `json:"fontFamily,optional"`
+		textColor       string  `json:"textColor,optional"`
+		fontStyle       string  `json:"fontStyle,optional"`
+		align           string  `json:"align,optional"`
+		lineHeight      float64 `json:"lineHeight,optional"`
+		letterSpacing   float64 `json:"letterSpacing,optional"`
+		textDecoration  string  `json:"textDecoration,optional"`
+		textTransform   string  `json:"textTransform,optional"`
+		textStroke      string  `json:"textStroke,optional"`
+		textStrokeWidth float64 `json:"textStrokeWidth,optional"`
+		// Draw 属性
+		points  []float64 `json:"points,optional"`
+		fill    string    `json:"fill,optional"`
+		tension float64   `json:"tension,optional"`
+	}
+	LayerResp {
+		id         int64            `json:"id"`
+		canvasId   int64            `json:"canvasId"`
+		layerType  string           `json:"layerType"`
+		name       string           `json:"name"`
+		zIndex     int64            `json:"zIndex"`
+		positionX  float64          `json:"positionX"`
+		positionY  float64          `json:"positionY"`
+		width      float64          `json:"width"`
+		height     float64          `json:"height"`
+		rotation   float64          `json:"rotation"`
+		visible    bool             `json:"visible"`
+		locked     bool             `json:"locked"`
+		properties *LayerProperties `json:"properties"`
+		fileId     *int64           `json:"fileId,optional"`
+		deleted    bool             `json:"deleted"`
+		deletedAt  *string          `json:"deletedAt,optional"`
+		createdAt  string           `json:"createdAt"`
+		updatedAt  string           `json:"updatedAt"`
+		createdBy  int64            `json:"createdBy"`
+	}
+	LayerInput {
+		id         string           `json:"id,optional"`
+		layerType  string           `json:"layerType"`
+		name       string           `json:"name"`
+		zIndex     int64            `json:"zIndex"`
+		x          float64          `json:"x"`
+		y          float64          `json:"y"`
+		width      float64          `json:"width"`
+		height     float64          `json:"height"`
+		rotation   float64          `json:"rotation"`
+		visible    bool             `json:"visible"`
+		locked     bool             `json:"locked"`
+		properties *LayerProperties `json:"properties"`
+		fileId     *int64           `json:"fileId,optional"`
+	}
+	CanvasWithLayersResp {
+		canvas CanvasResp  `json:"canvas"`
+		layers []LayerResp `json:"layers"`
+	}
+	GetCanvasWithLayersReq {
+		projectId int64 `path:"projectId"`
+	}
+	SyncLayersReq {
+		projectId int64        `path:"projectId"`
+		layers    []LayerInput `json:"layers"`
+	}
+	SyncLayersResp {
+		uploaded     int64            `json:"uploaded"`
+		updated      int64            `json:"updated"`
+		skipped      int64            `json:"skipped"`
+		layerMapping map[string]int64 `json:"layerMapping"`
+	}
+	UpdateLayerReq {
+		id         int64            `path:"id"`
+		name       *string          `json:"name,optional"`
+		x          *float64         `json:"x,optional"`
+		y          *float64         `json:"y,optional"`
+		width      *float64         `json:"width,optional"`
+		height     *float64         `json:"height,optional"`
+		rotation   *float64         `json:"rotation,optional"`
+		zIndex     *int64           `json:"zIndex,optional"`
+		visible    *bool            `json:"visible,optional"`
+		locked     *bool            `json:"locked,optional"`
+		properties *LayerProperties `json:"properties,optional"`
+	}
+	DeleteLayerReq {
+		id int64 `path:"id"`
+	}
+	DeleteLayerResp {
+		layerId   int64  `json:"layerId"`
+		deleted   bool   `json:"deleted"`
+		deletedAt string `json:"deletedAt"`
+	}
+	RestoreLayerReq {
+		id int64 `path:"id"`
+	}
+	RestoreLayerResp {
+		layerId    int64  `json:"layerId"`
+		restored   bool   `json:"restored"`
+		restoredAt string `json:"restoredAt"`
+	}
+	GetDeletedLayersReq {
+		canvasId int64 `form:"canvasId"`
+		limit    int64 `form:"limit,default=50"`
+	}
+	DeletedLayerInfo {
+		id        int64  `json:"id"`
+		name      string `json:"name"`
+		layerType string `json:"layerType"`
+		deletedAt string `json:"deletedAt"`
+		deletedBy int64  `json:"deletedBy"`
+	}
+	DeletedLayersResp {
+		deletedLayers []DeletedLayerInfo `json:"deletedLayers"`
+		total         int64              `json:"total"`
+	}
+)
+
+// Workspace API - 需要普通用户认证
+@server (
+	group:  workspace
+	prefix: /api/v1
+	jwt:    Auth
+)
+service sparkx-api {
+	// 画布管理
+	@handler GetCanvas
+	get /projects/:projectId/canvas (GetCanvasReq) returns (CanvasWithLayersResp)
+
+	@handler CreateCanvas
+	post /projects/:projectId/canvas (CreateCanvasReq) returns (CreateCanvasResp)
+
+	// 图层管理
+	@handler SyncLayers
+	post /projects/:projectId/layers/sync (SyncLayersReq) returns (SyncLayersResp)
+
+	@handler UpdateLayer
+	put /layers/:id (UpdateLayerReq) returns (BaseResp)
+
+	@handler DeleteLayer
+	delete /layers/:id (DeleteLayerReq) returns (DeleteLayerResp)
+
+	@handler RestoreLayer
+	post /layers/:id/restore (RestoreLayerReq) returns (RestoreLayerResp)
+
+	@handler GetDeletedLayers
+	get /layers/deleted (GetDeletedLayersReq) returns (DeletedLayersResp)
+}

@@ -1,0 +1,115 @@
+// Code scaffolded by goctl. Safe to edit.
+// goctl 1.9.2
+
+package files
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+
+	"github.com/anil-wu/spark-x/internal/model"
+	"github.com/anil-wu/spark-x/internal/svc"
+	"github.com/anil-wu/spark-x/internal/types"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type ListFileVersionsLogic struct {
+	logx.Logger
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewListFileVersionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ListFileVersionsLogic {
+	return &ListFileVersionsLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+func (l *ListFileVersionsLogic) ListFileVersions(req *types.ListFileVersionsReq) (resp *types.FileVersionListResp, err error) {
+	userIdNumber, ok := l.ctx.Value("userId").(json.Number)
+	isAdmin := false
+	if !ok {
+		adminIdNumber, ok2 := l.ctx.Value("adminId").(json.Number)
+		if !ok2 {
+			return nil, errors.New("unauthorized")
+		}
+		userIdNumber = adminIdNumber
+		isAdmin = true
+	}
+	userId, _ := userIdNumber.Int64()
+
+	if req == nil || req.Id <= 0 {
+		return nil, errors.New("file id required")
+	}
+
+	// Check file and project access
+	var file model.Files
+	if err := l.svcCtx.DB.WithContext(l.ctx).First(&file, req.Id).Error; err != nil {
+		return nil, err
+	}
+
+	// Get project_id from project_files
+	var projectFile model.ProjectFiles
+	if err := l.svcCtx.DB.WithContext(l.ctx).Where("file_id = ?", file.Id).First(&projectFile).Error; err != nil && !isAdmin {
+		return nil, err
+	}
+
+	if !isAdmin {
+		var count int64
+		if err := l.svcCtx.DB.WithContext(l.ctx).Model(&model.ProjectMembers{}).Where("project_id = ? AND user_id = ?", projectFile.ProjectId, userId).Count(&count).Error; err != nil {
+			return nil, err
+		}
+		if count == 0 {
+			return nil, errors.New("project not found or permission denied")
+		}
+	}
+
+	page := int(req.Page)
+	size := int(req.PageSize)
+	if page <= 0 {
+		page = 1
+	}
+	if size <= 0 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+	offset := (page - 1) * size
+	var list []model.FileVersions
+	if err = l.svcCtx.DB.WithContext(l.ctx).Model(&model.FileVersions{}).Where("file_id = ?", req.Id).Offset(offset).Limit(size).Order("version_number desc").Find(&list).Error; err != nil {
+		return nil, err
+	}
+	var total int64
+	if err = l.svcCtx.DB.WithContext(l.ctx).Model(&model.FileVersions{}).Where("file_id = ?", req.Id).Count(&total).Error; err != nil {
+		return nil, err
+	}
+	items := make([]types.FileVersionItem, 0, len(list))
+	for _, v := range list {
+		items = append(items, types.FileVersionItem{
+			Id:            int64(v.Id),
+			FileId:        int64(v.FileId),
+			VersionNumber: int64(v.VersionNumber),
+			SizeBytes:     int64(v.SizeBytes),
+			Hash:          v.Hash,
+			StorageKey:    v.StorageKey,
+			CreatedAt:     v.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     v.UpdatedAt.Format("2006-01-02 15:04:05"),
+			CreatedBy:     int64(v.CreatedBy),
+		})
+	}
+	resp = &types.FileVersionListResp{
+		List: items,
+		Page: types.PageResp{
+			Page:     int64(page),
+			PageSize: int64(size),
+			Total:    total,
+		},
+	}
+
+	return resp, nil
+}
