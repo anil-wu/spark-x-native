@@ -620,383 +620,77 @@ export default function LoginForm({ initialMode = "login", googleClientId }: Log
           className={`${styles.glassCard} relative overflow-hidden rounded-3xl shadow-2xl`}
         >
           <div className="h-1 w-full bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-400" />
-          <Tabs
-            value={mode}
-            onValueChange={(nextMode) => handleModeChange(nextMode as Mode)}
-            className="border-b border-[#edf2fa]"
-          >
-            <TabsList className="grid h-auto w-full grid-cols-2 rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="login"
-                className="rounded-none border-b-2 border-transparent py-4 text-sm font-semibold text-slate-300 data-[state=active]:border-orange-400 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
-              >
-                {t("login.tab_login")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="register"
-                className="rounded-none border-b-2 border-transparent py-4 text-sm font-semibold text-slate-300 data-[state=active]:border-orange-400 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
-              >
-                {t("login.tab_register")}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
 
-          <div className="min-h-[650px] space-y-6 px-8 pb-9 pt-8">
-            {mode === "login" ? (
-              <form className="space-y-5" onSubmit={handleLogin}>
-                <div className="mb-6 text-center">
-                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">
-                    {t("login.welcome_back")}
-                  </h2>
-                  <p className="text-sm text-gray-500">{t("login.signin_subtitle")}</p>
-                </div>
+          <div className="min-h-[400px] space-y-6 px-8 pb-9 pt-8">
+            <form className="space-y-5" onSubmit={handleLogin}>
+              <FloatingInput
+                id="login-email"
+                name="login-email"
+                type="email"
+                label={t("login.email")}
+                value={loginForm.email}
+                onValueChange={setLoginEmail}
+                disabled={pending}
+                autoComplete="email"
+              />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    className={`${styles.socialBtn} relative flex h-10 items-center justify-center overflow-hidden rounded-xl bg-white text-sm font-semibold text-slate-700 ${
-                      pending ? "pointer-events-none opacity-70" : ""
-                    }`}
-                  >
-                    {googleLoginEnabled ? (
-                      <>
-                        <span className="flex items-center gap-2">
-                          <svg className="h-4 w-4" viewBox="0 0 18 18" aria-hidden="true">
-                            <path
-                              fill="#EA4335"
-                              d="M9 7.364v3.555h4.943c-.218 1.144-.87 2.113-1.853 2.764l2.994 2.324c1.746-1.607 2.752-3.974 2.752-6.79 0-.66-.06-1.296-.17-1.853H9z"
-                            />
-                            <path
-                              fill="#34A853"
-                              d="M9 18c2.484 0 4.568-.824 6.09-2.24l-2.994-2.324c-.824.553-1.877.883-3.096.883-2.378 0-4.39-1.605-5.107-3.766H.8v2.397A8.999 8.999 0 009 18z"
-                            />
-                            <path
-                              fill="#4A90E2"
-                              d="M3.893 10.553A5.41 5.41 0 013.607 9c0-.54.1-1.065.286-1.553V5.05H.8A8.999 8.999 0 000 9c0 1.454.348 2.83.8 3.95l3.093-2.397z"
-                            />
-                            <path
-                              fill="#FBBC05"
-                              d="M9 3.58c1.35 0 2.56.465 3.515 1.378l2.635-2.635C13.566.84 11.482 0 9 0A8.999 8.999 0 00.8 5.05l3.093 2.397C4.61 5.186 6.622 3.58 9 3.58z"
-                            />
-                          </svg>
-                          <span>Google</span>
-                        </span>
-                        <div className={styles.socialGoogleOverlay}>
-                          <GoogleLogin
-                            onSuccess={(credentialResponse: CredentialResponse) =>
-                              handleGoogleSuccess(credentialResponse.credential)
-                            }
-                            onError={handleGoogleError}
-                            theme="outline"
-                            size="large"
-                            shape="rectangular"
-                            text="continue_with"
-                            width={210}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleGoogleUnavailable}
-                        className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-slate-700"
-                      >
-                        <svg className="h-4 w-4" viewBox="0 0 18 18" aria-hidden="true">
-                          <path
-                            fill="#EA4335"
-                            d="M9 7.364v3.555h4.943c-.218 1.144-.87 2.113-1.853 2.764l2.994 2.324c1.746-1.607 2.752-3.974 2.752-6.79 0-.66-.06-1.296-.17-1.853H9z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M9 18c2.484 0 4.568-.824 6.09-2.24l-2.994-2.324c-.824.553-1.877.883-3.096.883-2.378 0-4.39-1.605-5.107-3.766H.8v2.397A8.999 8.999 0 009 18z"
-                          />
-                          <path
-                            fill="#4A90E2"
-                            d="M3.893 10.553A5.41 5.41 0 013.607 9c0-.54.1-1.065.286-1.553V5.05H.8A8.999 8.999 0 000 9c0 1.454.348 2.83.8 3.95l3.093-2.397z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M9 3.58c1.35 0 2.56.465 3.515 1.378l2.635-2.635C13.566.84 11.482 0 9 0A8.999 8.999 0 00.8 5.05l3.093 2.397C4.61 5.186 6.622 3.58 9 3.58z"
-                          />
-                        </svg>
-                        <span>Google</span>
-                      </button>
-                    )}
-                  </div>
+              <FloatingPasswordInput
+                id="login-password"
+                name="login-password"
+                label={t("login.password")}
+                value={loginForm.password}
+                onValueChange={setLoginPassword}
+                disabled={pending}
+                autoComplete="current-password"
+                visible={passwordVisibility.login}
+                onToggleVisible={() => togglePasswordVisibility("login")}
+                showAriaLabel={t("login.show_password")}
+                hideAriaLabel={t("login.hide_password")}
+              />
 
-                  <button
-                    type="button"
-                    onClick={handleApple}
-                    disabled={pending}
-                    className={`${styles.socialBtn} flex h-10 cursor-pointer items-center justify-center space-x-2 rounded-xl bg-white text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-70`}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="black"
-                      aria-hidden="true"
-                    >
-                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zm-5.85-15.1c.07-2.04 1.76-3.89 3.75-4.12.29 2.32-2.07 4.46-3.75 4.12z" />
-                    </svg>
-                    <span>Apple</span>
-                  </button>
-                </div>
-
-                <div className="relative flex items-center justify-center">
-                  <div className="flex-1 border-t border-[#edf2fa]" />
-                  <span className="bg-transparent px-3 text-xs text-[#a6b0c4]">
-                    {t("login.or_email")}
-                  </span>
-                  <div className="flex-1 border-t border-[#edf2fa]" />
-                </div>
-
-                <FloatingInput
-                  id="login-email"
-                  name="login-email"
-                  type="email"
-                  label={t("login.email")}
-                  value={loginForm.email}
-                  onValueChange={setLoginEmail}
-                  disabled={pending}
-                  autoComplete="email"
-                />
-
-                <FloatingPasswordInput
-                  id="login-password"
-                  name="login-password"
-                  label={t("login.password")}
-                  value={loginForm.password}
-                  onValueChange={setLoginPassword}
-                  disabled={pending}
-                  autoComplete="current-password"
-                  visible={passwordVisibility.login}
-                  onToggleVisible={() => togglePasswordVisibility("login")}
-                  showAriaLabel={t("login.show_password")}
-                  hideAriaLabel={t("login.hide_password")}
-                />
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-me"
-                      checked={loginForm.rememberMe}
-                      onCheckedChange={(checked) =>
-                        setLoginForm((prev) => ({
-                          ...prev,
-                          rememberMe: checked === true,
-                        }))
-                      }
-                      className="h-4 w-4 rounded border-[#dbe8ff] data-[state=checked]:border-orange-500 data-[state=checked]:bg-orange-500"
-                    />
-                    <Label
-                      htmlFor="remember-me"
-                      className="cursor-pointer text-sm font-medium text-[#5f6d87] transition-colors hover:text-[#3e4a62]"
-                    >
-                      {t("login.remember_me")}
-                    </Label>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMessage({
-                        type: "info",
-                        text: t("login.forgot_password_coming_soon"),
-                      })
-                    }
-                    className="cursor-pointer text-base font-semibold text-orange-500 transition-colors hover:text-orange-600 sm:text-sm"
-                  >
-                    {t("login.forgot_password")}
-                  </button>
-                </div>
-
+              <div className="flex items-center justify-end text-sm">
                 <button
-                  type="submit"
-                  disabled={pending}
-                  className={`${styles.btnGradient} flex h-12 w-full cursor-pointer items-center justify-center space-x-2 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70`}
+                  type="button"
+                  onClick={() =>
+                    setMessage({
+                      type: "info",
+                      text: t("login.forgot_password_coming_soon"),
+                    })
+                  }
+                  className="cursor-pointer text-base font-semibold text-orange-500 transition-colors hover:text-orange-600 sm:text-sm"
                 >
-                  {isLoginSubmitting ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
-                      <span>{t("login.signing_in")}</span>
-                    </>
-                  ) : message?.type === "success" ? (
-                    <>
-                      <Check className="h-5 w-5" />
-                      <span>{t("login.signed_in")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{t("login.sign_in")}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
+                  {t("login.forgot_password")}
                 </button>
-              </form>
-            ) : (
-              <form className="space-y-4" onSubmit={handleRegister}>
-                <div className="mb-6 text-center">
-                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">
-                    {t("login.create_account_title")}
-                  </h2>
-                  <p className="text-sm text-gray-500">{t("login.create_account_subtitle")}</p>
-                </div>
+              </div>
 
-                <FloatingInput
-                  id="reg-username"
-                  name="reg-username"
-                  label={t("login.username")}
-                  value={registerForm.name}
-                  onValueChange={setRegisterName}
-                  disabled={pending}
-                  autoComplete="name"
-                />
-
-                <FloatingInput
-                  id="reg-email"
-                  name="reg-email"
-                  type="email"
-                  label={t("login.email")}
-                  value={registerForm.email}
-                  onValueChange={setRegisterEmail}
-                  disabled={pending}
-                  autoComplete="email"
-                />
-
-                <FloatingPasswordInput
-                  id="reg-password"
-                  name="reg-password"
-                  label={t("login.set_password")}
-                  value={registerForm.password}
-                  onValueChange={setRegisterPassword}
-                  disabled={pending}
-                  autoComplete="new-password"
-                  visible={passwordVisibility.register}
-                  onToggleVisible={() => togglePasswordVisibility("register")}
-                  showAriaLabel={t("login.show_password")}
-                  hideAriaLabel={t("login.hide_password")}
-                />
-
-                <div className="min-h-[34px]">
-                  {registerForm.password.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex h-1 space-x-1">
-                        {Array.from({ length: 4 }).map((_, index) => (
-                          <div
-                            key={index}
-                            className={`flex-1 rounded-full transition-colors ${
-                              index < passwordStrength.score ? strengthColor : "bg-gray-200"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {t("login.password_strength_with_label", {
-                          label: passwordStrength.label,
-                        })}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <FloatingPasswordInput
-                  id="reg-confirm"
-                  name="reg-confirm"
-                  label={t("login.confirm_password")}
-                  value={registerForm.confirmPassword}
-                  onValueChange={setRegisterConfirmPassword}
-                  disabled={pending}
-                  autoComplete="new-password"
-                  visible={passwordVisibility.registerConfirm}
-                  onToggleVisible={() => togglePasswordVisibility("registerConfirm")}
-                  showAriaLabel={t("login.show_password")}
-                  hideAriaLabel={t("login.hide_password")}
-                />
-
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="agree-terms"
-                    checked={registerForm.agreeTerms}
-                    onCheckedChange={(checked) =>
-                      setRegisterForm((prev) => ({
-                        ...prev,
-                        agreeTerms: checked === true,
-                      }))
-                    }
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 data-[state=checked]:border-orange-500 data-[state=checked]:bg-orange-500"
-                  />
-                  <span className="text-xs leading-relaxed text-gray-500">
-                    <Label htmlFor="agree-terms" className="cursor-pointer text-xs text-gray-500">
-                      {t("login.terms_prefix")}
-                    </Label>
-                    <button
-                      type="button"
-                      className="ml-1 cursor-pointer text-orange-600 hover:underline"
-                    >
-                      {t("login.terms_of_use")}
-                    </button>
-                    {t("login.and")}
-                    <button
-                      type="button"
-                      className="ml-1 cursor-pointer text-orange-600 hover:underline"
-                    >
-                      {t("login.privacy_policy")}
-                    </button>
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className={`${styles.btnGradient} flex w-full cursor-pointer items-center justify-center space-x-2 rounded-xl py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70`}
-                >
-                  {isRegisterSubmitting ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
-                      <span>{t("login.creating")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{t("login.create_account")}</span>
-                      <UserPlus className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+              <button
+                type="submit"
+                disabled={pending}
+                className={`${styles.btnGradient} flex h-12 w-full cursor-pointer items-center justify-center space-x-2 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70`}
+              >
+                {isLoginSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
+                    <span>{t("login.signing_in")}</span>
+                  </>
+                ) : message?.type === "success" ? (
+                  <>
+                    <Check className="h-5 w-5" />
+                    <span>{t("login.signed_in")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t("login.sign_in")}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
 
             <div className="min-h-[52px]">
               <MessageBanner message={message} />
             </div>
-
-            <div className="pt-10 text-center">
-              <p className="text-sm font-medium text-[#b4bfd1]">
-                {t("login.recaptcha_protected")}
-                <br />
-                <button
-                  type="button"
-                  className="cursor-pointer font-semibold text-[#a6b2c8] hover:text-[#7f8ea8]"
-                >
-                  {t("login.privacy_policy")}
-                </button>
-                {t("login.and")}
-                <button
-                  type="button"
-                  className="cursor-pointer font-semibold text-[#a6b2c8] hover:text-[#7f8ea8]"
-                >
-                  {t("login.terms_of_service")}
-                </button>
-              </p>
-            </div>
           </div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center space-x-2 text-sm text-[#a4b4cc] transition-colors hover:text-[#d1daea]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>{t("login.back_home")}</span>
-          </Link>
         </div>
       </div>
     </div>

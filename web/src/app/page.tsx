@@ -1,17 +1,27 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import SparkHome from "@/components/Home/SparkHome";
+import LoginForm from "@/components/Auth/LoginForm";
 import { getSparkxSessionFromHeaders } from "@/lib/sparkx-session";
 
-export default async function HomePage() {
+type HomePageProps = {
+  searchParams?: {
+    mode?: string | string[];
+  };
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
   const requestHeaders = await headers();
   const session = getSparkxSessionFromHeaders(requestHeaders);
 
-  // 如果用户已登录，重定向到用户首页
   if (session) {
     redirect("/home");
   }
 
-  return <SparkHome isAuthenticated={false} />;
+  const modeParam = searchParams?.mode;
+  const modeValue = Array.isArray(modeParam) ? modeParam[0] : modeParam;
+  const initialMode = modeValue === "register" ? "register" : "login";
+  const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+
+  return <LoginForm initialMode={initialMode} googleClientId={googleClientId} />;
 }

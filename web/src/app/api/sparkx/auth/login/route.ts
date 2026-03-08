@@ -64,9 +64,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const authToken = result.data.token;
+  const authHeader = { Authorization: `Bearer ${authToken}` };
+
   let username: string | undefined;
   const profileResult = await fetchSparkxJson<{ username?: string; email?: string }>(
     `/api/v1/users/email/${encodeURIComponent(body.email)}`,
+    { headers: authHeader },
   );
   if (profileResult.ok && typeof profileResult.data.username === "string") {
     username = profileResult.data.username;
@@ -77,6 +81,7 @@ export async function POST(request: NextRequest) {
       `/api/v1/users/${result.data.userId}`,
       {
         method: "PUT",
+        headers: authHeader,
         body: JSON.stringify({
           username: body.username,
         }),

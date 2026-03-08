@@ -127,19 +127,6 @@ export default function UserHome({ session }: UserHomeProps) {
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white shadow-lg transition-all hover:shadow-xl hover:shadow-blue-500/20">
-            <div className="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-white/10" />
-            <div className="relative">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <Flame className="h-6 w-6" />
-              </div>
-              <div className="text-3xl font-bold">12</div>
-              <div className="mt-1 text-sm text-blue-100">
-                {t("user_home.stats.active_days")}
-              </div>
-            </div>
-          </div>
-
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 p-6 text-white shadow-lg transition-all hover:shadow-xl hover:shadow-purple-500/20">
             <div className="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-white/10" />
             <div className="relative">
@@ -149,19 +136,6 @@ export default function UserHome({ session }: UserHomeProps) {
               <div className="text-3xl font-bold">5</div>
               <div className="mt-1 text-sm text-purple-100">
                 {t("user_home.stats.completed")}
-              </div>
-            </div>
-          </div>
-
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 text-white shadow-lg transition-all hover:shadow-xl hover:shadow-emerald-500/20">
-            <div className="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-white/10" />
-            <div className="relative">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <Users className="h-6 w-6" />
-              </div>
-              <div className="text-3xl font-bold">1.2k</div>
-              <div className="mt-1 text-sm text-emerald-100">
-                {t("user_home.stats.views")}
               </div>
             </div>
           </div>
