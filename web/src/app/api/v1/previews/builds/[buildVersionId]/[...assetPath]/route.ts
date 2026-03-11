@@ -17,7 +17,10 @@ export async function GET(
 
   const baseUrl = getSparkxApiBaseUrl();
   const joined = Array.isArray(params.assetPath) ? params.assetPath.join("/") : "";
-  const upstreamUrl = `${baseUrl}/api/v1/previews/builds/${params.buildVersionId}/asset?path=${encodeURIComponent(joined)}`;
+  if (!joined) {
+    return NextResponse.json({ message: "Missing asset path" }, { status: 400 });
+  }
+  const upstreamUrl = `${baseUrl}/api/v1/previews/builds/${params.buildVersionId}/${joined}`;
 
   const upstream = await fetch(upstreamUrl, {
     method: "GET",
