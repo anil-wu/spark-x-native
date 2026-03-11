@@ -218,6 +218,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		if strings.TrimSpace(c.S3.Endpoint) != "" && strings.TrimSpace(c.S3.Bucket) != "" {
 			s3Store, err := storage.NewS3Store(
 				c.S3.Endpoint,
+				c.S3.PublicEndpoint,
 				c.S3.UseSSL,
 				c.S3.Region,
 				c.S3.AccessKeyId,

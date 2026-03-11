@@ -60,6 +60,9 @@ func main() {
 	if endpoint := strings.TrimSpace(os.Getenv("S3_ENDPOINT")); endpoint != "" {
 		c.S3.Endpoint = endpoint
 	}
+	if endpoint := strings.TrimSpace(os.Getenv("S3_PUBLIC_ENDPOINT")); endpoint != "" {
+		c.S3.PublicEndpoint = endpoint
+	}
 	if accessKeyId := strings.TrimSpace(os.Getenv("S3_ACCESS_KEY_ID")); accessKeyId != "" {
 		c.S3.AccessKeyId = accessKeyId
 	}

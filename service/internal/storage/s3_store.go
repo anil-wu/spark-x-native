@@ -17,8 +17,10 @@ import (
 )
 
 type S3Store struct {
-	scheme        string
-	host          string
+	internalScheme string
+	internalHost   string
+	publicScheme   string
+	publicHost     string
 	region        string
 	accessKeyId   string
 	accessSecret  string
@@ -27,20 +29,32 @@ type S3Store struct {
 	httpClient    *http.Client
 }
 
-func NewS3Store(endpoint string, useSSL bool, region string, accessKeyId string, accessKeySecret string, bucket string, expireSeconds int64) (*S3Store, error) {
-	scheme, host, err := normalizeS3Endpoint(endpoint, useSSL)
+func NewS3Store(endpoint string, publicEndpoint string, useSSL bool, region string, accessKeyId string, accessKeySecret string, bucket string, expireSeconds int64) (*S3Store, error) {
+	internalScheme, internalHost, err := normalizeS3Endpoint(endpoint, useSSL)
 	if err != nil {
 		return nil, err
 	}
+
+	publicRaw := strings.TrimSpace(publicEndpoint)
+	if publicRaw == "" {
+		publicRaw = endpoint
+	}
+	publicScheme, publicHost, err := normalizeS3Endpoint(publicRaw, useSSL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &S3Store{
-		scheme:        scheme,
-		host:          host,
-		region:        strings.TrimSpace(region),
-		accessKeyId:   strings.TrimSpace(accessKeyId),
-		accessSecret:  accessKeySecret,
-		bucket:        strings.TrimSpace(bucket),
-		expireSeconds: expireSeconds,
-		httpClient:    http.DefaultClient,
+		internalScheme: internalScheme,
+		internalHost:   internalHost,
+		publicScheme:   publicScheme,
+		publicHost:     publicHost,
+		region:         strings.TrimSpace(region),
+		accessKeyId:    strings.TrimSpace(accessKeyId),
+		accessSecret:   accessKeySecret,
+		bucket:         strings.TrimSpace(bucket),
+		expireSeconds:  expireSeconds,
+		httpClient:     http.DefaultClient,
 	}, nil
 }
 
@@ -100,9 +114,9 @@ func hmacSha256(key []byte, data string) []byte {
 	return mac.Sum(nil)
 }
 
-func (s *S3Store) presignURL(ctx context.Context, method string, objectKey string, contentType string, expiry time.Duration) (string, error) {
+func (s *S3Store) presignURL(ctx context.Context, method string, objectKey string, contentType string, expiry time.Duration, scheme string, host string) (string, error) {
 	_ = ctx
-	if s.host == "" || s.bucket == "" || s.accessKeyId == "" || strings.TrimSpace(s.accessSecret) == "" {
+	if strings.TrimSpace(host) == "" || s.bucket == "" || s.accessKeyId == "" || strings.TrimSpace(s.accessSecret) == "" {
 		return "", errors.New("S3 not configured")
 	}
 	region := strings.TrimSpace(s.region)
@@ -130,7 +144,7 @@ func (s *S3Store) presignURL(ctx context.Context, method string, objectKey strin
 	canonicalURI := "/" + awsQueryEscape(s.bucket) + "/" + escapedKey
 
 	signedHeaders := "host"
-	canonicalHeaders := "host:" + s.host + "\n"
+	canonicalHeaders := "host:" + host + "\n"
 	ct := strings.TrimSpace(contentType)
 	if strings.EqualFold(method, "PUT") && ct != "" {
 		signedHeaders = "content-type;host"
@@ -178,19 +192,19 @@ func (s *S3Store) presignURL(ctx context.Context, method string, objectKey strin
 	signature := hex.EncodeToString(hmacSha256(kSigning, stringToSign))
 
 	finalQuery := canonicalQueryString + "&X-Amz-Signature=" + signature
-	return s.scheme + "://" + s.host + canonicalURI + "?" + finalQuery, nil
+	return scheme + "://" + host + canonicalURI + "?" + finalQuery, nil
 }
 
 func (s *S3Store) PresignPutObject(ctx context.Context, objectKey string, contentType string, expiry time.Duration) (string, error) {
-	return s.presignURL(ctx, "PUT", objectKey, contentType, expiry)
+	return s.presignURL(ctx, "PUT", objectKey, contentType, expiry, s.publicScheme, s.publicHost)
 }
 
 func (s *S3Store) PresignGetObject(ctx context.Context, objectKey string, expiry time.Duration) (string, error) {
-	return s.presignURL(ctx, "GET", objectKey, "", expiry)
+	return s.presignURL(ctx, "GET", objectKey, "", expiry, s.publicScheme, s.publicHost)
 }
 
 func (s *S3Store) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, error) {
-	u, err := s.presignURL(ctx, "GET", objectKey, "", time.Duration(s.expireSeconds)*time.Second)
+	u, err := s.presignURL(ctx, "GET", objectKey, "", time.Duration(s.expireSeconds)*time.Second, s.internalScheme, s.internalHost)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +225,7 @@ func (s *S3Store) GetObject(ctx context.Context, objectKey string) (io.ReadClose
 }
 
 func (s *S3Store) DeleteObject(ctx context.Context, objectKey string) error {
-	u, err := s.presignURL(ctx, "DELETE", objectKey, "", time.Duration(s.expireSeconds)*time.Second)
+	u, err := s.presignURL(ctx, "DELETE", objectKey, "", time.Duration(s.expireSeconds)*time.Second, s.internalScheme, s.internalHost)
 	if err != nil {
 		return err
 	}
@@ -232,7 +246,7 @@ func (s *S3Store) DeleteObject(ctx context.Context, objectKey string) error {
 }
 
 func (s *S3Store) StatObject(ctx context.Context, objectKey string) (*ObjectStat, error) {
-	u, err := s.presignURL(ctx, "HEAD", objectKey, "", time.Duration(s.expireSeconds)*time.Second)
+	u, err := s.presignURL(ctx, "HEAD", objectKey, "", time.Duration(s.expireSeconds)*time.Second, s.internalScheme, s.internalHost)
 	if err != nil {
 		return nil, err
 	}

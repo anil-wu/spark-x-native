@@ -497,28 +497,52 @@ export default function UserSettings({ session }: { session: SparkxSession }) {
 
       if (templateFile) {
         const ext = pickExt(templateFile.name);
-        const hash = await fileAPI.calculateHash(templateFile);
         setTemplateUploadProgress(30);
 
-        const preupload = await fileAPI.preUpload(
-          0,
-          templateFile.name,
-          "archive",
-          ext || "zip",
-          templateFile.size,
-          hash,
-        );
-        if (!preupload) {
-          throw new Error("预上传失败");
+        const formData = new FormData();
+        formData.set("file", templateFile, templateFile.name);
+        formData.set("projectId", "0");
+        formData.set("name", templateFile.name);
+        formData.set("fileCategory", "archive");
+        formData.set("fileFormat", ext || "zip");
+        if (templateFile.type) {
+          formData.set("contentType", templateFile.type);
         }
 
-        setTemplateUploadProgress(60);
-        const ok = await fileAPI.uploadToOSS(preupload.uploadUrl, templateFile, preupload.contentType);
-        if (!ok) {
-          throw new Error("上传到存储失败");
+        const uploadResp = await fetch("/api/files/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadText = await uploadResp.text();
+        let uploadPayload: any = uploadText;
+        try {
+          uploadPayload = uploadText ? (JSON.parse(uploadText) as any) : null;
+        } catch {
+          uploadPayload = uploadText;
         }
 
-        payload.archiveFileId = preupload.fileId;
+        if (!uploadResp.ok) {
+          const message =
+            (uploadPayload && typeof uploadPayload === "object" && typeof uploadPayload.message === "string" && uploadPayload.message.trim())
+              ? uploadPayload.message.trim()
+              : (uploadPayload && typeof uploadPayload === "object" && typeof uploadPayload.error === "string" && uploadPayload.error.trim())
+                ? uploadPayload.error.trim()
+                : (uploadPayload && typeof uploadPayload === "object" && typeof uploadPayload.msg === "string" && uploadPayload.msg.trim())
+                  ? uploadPayload.msg.trim()
+                  : (typeof uploadPayload === "string" && uploadPayload.trim())
+                    ? uploadPayload.trim()
+                    : "上传失败";
+          throw new Error(message);
+        }
+
+        const fileId = Number(uploadPayload?.fileId);
+        if (!Number.isFinite(fileId) || fileId <= 0) {
+          throw new Error("上传失败：未返回 fileId");
+        }
+
+        setTemplateUploadProgress(75);
+        payload.archiveFileId = fileId;
       }
 
       setTemplateUploadProgress(85);

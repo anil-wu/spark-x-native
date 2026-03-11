@@ -7,8 +7,8 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -trimpath -ldflags="-s -w" -o /out/sparkx-service .
+RUN CGO_ENABLED=0 GOMAXPROCS=2 GOMEMLIMIT=2GiB \
+    go build -p 1 -trimpath -ldflags="-s -w" -o /out/sparkx-service .
 
 FROM alpine:3.20
 

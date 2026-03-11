@@ -34,6 +34,7 @@ type Config struct {
 	}
 	S3 struct {
 		Endpoint        string
+		PublicEndpoint  string
 		AccessKeyId     string
 		AccessKeySecret string
 		Bucket          string
