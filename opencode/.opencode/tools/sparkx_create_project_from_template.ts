@@ -4,6 +4,7 @@ import { execFile } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises"
 import { readUserToken } from "./sparkx_userinfo"
+import { fetchBinaryWithFallback } from "./signed_url_network"
 
 function normalizeBaseUrl(raw: string) {
   const trimmed = raw.trim()
@@ -136,13 +137,6 @@ async function readJsonResponse(response: Response) {
   } catch {
     return text
   }
-}
-
-async function fetchBinary(url: string) {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`download failed (${response.status})`)
-  const ab = await response.arrayBuffer()
-  return Buffer.from(ab)
 }
 
 async function sparkxRequest(input: {
@@ -353,7 +347,7 @@ export default tool({
     const artifactsTemplatesDir = path.resolve(projectDir, "artifacts", "templates")
     await mkdir(artifactsTemplatesDir, { recursive: true })
 
-    const archiveBytes = await fetchBinary(downloadUrl)
+    const archiveBytes = await fetchBinaryWithFallback(downloadUrl)
     const kind = detectArchiveKind(archiveBytes)
     const archiveExt = kind === "zip" ? "zip" : kind === "gzip" ? "tgz" : "archive"
     const archivePath = path.resolve(artifactsTemplatesDir, `${toSafeFileStem(templateName)}_${archiveFileId}.${archiveExt}`)

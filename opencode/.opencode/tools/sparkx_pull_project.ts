@@ -2,6 +2,7 @@ import { tool } from "@opencode-ai/plugin"
 import * as path from "node:path"
 import { access, mkdir, writeFile } from "node:fs/promises"
 import { readUserToken } from "./sparkx_userinfo"
+import { fetchBinaryWithFallback } from "./signed_url_network"
 
 function normalizeBaseUrl(raw: string) {
   const trimmed = raw.trim()
@@ -118,13 +119,6 @@ async function sparkxJson(input: {
     throw new Error(`sparkx api failed (${response.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}`)
   }
   return readJsonResponse(response)
-}
-
-async function fetchBinary(url: string) {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`download failed (${response.status})`)
-  const ab = await response.arrayBuffer()
-  return Buffer.from(ab)
 }
 
 async function ensureWorkspaceLayout(projectRoot: string) {
@@ -275,7 +269,7 @@ export default tool({
       })
       const manifestDownloadUrl = String(manifestDownloadMeta?.downloadUrl || "")
       if (!manifestDownloadUrl) throw new Error(`missing downloadUrl for manifest fileId=${mr.manifestFileId}`)
-      const manifestBuf = await fetchBinary(manifestDownloadUrl)
+      const manifestBuf = await fetchBinaryWithFallback(manifestDownloadUrl)
       const manifestText = manifestBuf.toString("utf8")
       let manifestJson: any
       try {
@@ -374,7 +368,7 @@ export default tool({
         const downloadUrl = String(downloadMeta?.downloadUrl || "")
         if (!downloadUrl) throw new Error(`missing downloadUrl for fileId=${f.fileId}`)
 
-        const content = await fetchBinary(downloadUrl)
+        const content = await fetchBinaryWithFallback(downloadUrl)
         await writeFile(absPath, content)
         written += 1
         bytes += content.length

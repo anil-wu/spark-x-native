@@ -4,11 +4,15 @@ type SparkxProject = {
   id: number;
   name: string;
   description: string;
+  cover_file_id?: number;
   coverFileId?: number;
-  ownerId: number;
+  owner_id?: number;
+  ownerId?: number;
   status: "active" | "archived" | string;
-  createdAt: string;
-  updatedAt: string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
 };
 
 type SparkxPagedResponse<T> = {
@@ -121,7 +125,8 @@ export const getSparkxApiBaseUrl = (): string => {
   return normalizeBaseURL(raw);
 };
 
-const toIsoString = (raw: string): string => {
+const toIsoString = (raw?: string): string => {
+  if (!raw) return new Date().toISOString();
   const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) {
@@ -130,29 +135,33 @@ const toIsoString = (raw: string): string => {
   return parsed.toISOString();
 };
 
-export const mapSparkxProject = (project: SparkxProject): Project => ({
-  id: String(project.id),
-  name: project.name,
-  description: project.description,
-  createdAt: toIsoString(project.createdAt),
-  updatedAt: toIsoString(project.updatedAt),
-  coverImage:
-    (() => {
-      const raw =
-        (project as unknown as Record<string, unknown>).coverFileId ??
-        (project as unknown as Record<string, unknown>).cover_file_id ??
-        (project as unknown as Record<string, unknown>).coverFileID ??
-        (project as unknown as Record<string, unknown>).cover_fileId;
-      const normalized =
-        typeof raw === "number"
-          ? raw
-          : typeof raw === "string"
-            ? Number.parseInt(raw, 10)
-            : NaN;
-      return Number.isInteger(normalized) && normalized > 0
-        ? `/api/files/${normalized}/content`
-        : undefined;
-    })(),
-});
+export const mapSparkxProject = (project: SparkxProject): Project => {
+  // DEBUG: 打印原始项目数据以排查字段名问题
+  console.log("DEBUG: mapSparkxProject raw project:", JSON.stringify(project, null, 2));
+  return {
+    id: String(project.id),
+    name: project.name,
+    description: project.description,
+    createdAt: toIsoString(project.created_at ?? project.createdAt),
+    updatedAt: toIsoString(project.updated_at ?? project.updatedAt),
+    coverImage:
+      (() => {
+        const raw =
+          project.cover_file_id ??
+          project.coverFileId ??
+          (project as unknown as Record<string, unknown>).coverFileID ??
+          (project as unknown as Record<string, unknown>).cover_fileId;
+        const normalized =
+          typeof raw === "number"
+            ? raw
+            : typeof raw === "string"
+              ? Number.parseInt(raw, 10)
+              : NaN;
+        return Number.isInteger(normalized) && normalized > 0
+          ? `/api/files/${normalized}/content`
+          : undefined;
+      })(),
+  };
+};
 
 export type { SparkxProject, SparkxPagedResponse };

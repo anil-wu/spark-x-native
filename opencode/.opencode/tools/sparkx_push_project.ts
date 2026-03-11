@@ -3,6 +3,7 @@ import * as path from "node:path"
 import { createHash } from "node:crypto"
 import { readFile, readdir, stat, writeFile } from "node:fs/promises"
 import { readUserToken } from "./sparkx_userinfo"
+import { fetchBinaryWithFallback, putToSignedUrlWithFallback } from "./signed_url_network"
 
 function normalizeBaseUrl(raw: string) {
   const trimmed = raw.trim()
@@ -114,13 +115,6 @@ async function readJsonResponse(response: Response) {
   }
 }
 
-async function fetchBinary(url: string) {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`download failed (${response.status})`)
-  const ab = await response.arrayBuffer()
-  return Buffer.from(ab)
-}
-
 async function sparkxRequest(input: {
   apiBaseUrl: string
   token: string
@@ -154,21 +148,6 @@ async function sparkxRequest(input: {
     throw new Error(`sparkx api failed (${response.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}`)
   }
   return readJsonResponse(response)
-}
-
-async function putToSignedUrl(url: string, contentType: string, content: Buffer) {
-  const response = await fetch(url, {
-    method: "PUT",
-    method: "PUT",
-    headers: {
-      "content-type": contentType,
-    },
-    body: content,
-  })
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`upload failed (${response.status}): ${text}`)
-  }
 }
 
 async function walkFiles(rootDir: string, relativeDir = ""): Promise<string[]> {
@@ -308,7 +287,7 @@ export default tool({
       })
       const downloadUrl = String(meta?.downloadUrl || "")
       if (!downloadUrl) throw new Error("remote manifest downloadUrl is missing")
-      const buf = await fetchBinary(downloadUrl)
+      const buf = await fetchBinaryWithFallback(downloadUrl)
       let json: any
       try {
         json = JSON.parse(buf.toString("utf8"))
@@ -377,7 +356,7 @@ export default tool({
         throw new Error(`preupload response invalid for ${nameInProject}`)
       }
 
-      await putToSignedUrl(uploadUrl, contentType, content)
+      await putToSignedUrlWithFallback(uploadUrl, contentType, content)
       newEntriesByPath.set(rel, { path: rel, fileId, fileVersionId: versionId, hash, sizeBytes, lastModified })
       uploaded.push({ path: rel, name: nameInProject, fileId, versionId, versionNumber, hash, sizeBytes })
     }
@@ -481,7 +460,7 @@ export default tool({
     if (!manifestUploadUrl || !manifestContentType || !Number.isFinite(manifestFileId) || !Number.isFinite(manifestFileVersionId)) {
       throw new Error("preupload response invalid for manifest.json")
     }
-    await putToSignedUrl(manifestUploadUrl, manifestContentType, manifestBytes)
+    await putToSignedUrlWithFallback(manifestUploadUrl, manifestContentType, manifestBytes)
 
     const createdManifest: any = await sparkxRequest({
       apiBaseUrl,

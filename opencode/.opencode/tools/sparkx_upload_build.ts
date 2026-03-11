@@ -3,6 +3,7 @@ import * as path from "node:path"
 import { createHash } from "node:crypto"
 import { copyFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises"
 import { readUserToken } from "./sparkx_userinfo"
+import { putToSignedUrlWithFallback } from "./signed_url_network"
 
 function normalizeBaseUrl(raw: string) {
   const trimmed = raw.trim()
@@ -124,20 +125,6 @@ async function sparkxRequest(input: {
     throw new Error(`sparkx api failed (${response.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}`)
   }
   return readJsonResponse(response)
-}
-
-async function putToSignedUrl(url: string, contentType: string, content: Buffer) {
-  const response = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "content-type": contentType,
-    },
-    body: content,
-  })
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`upload failed (${response.status}): ${text}`)
-  }
 }
 
 async function walkFiles(rootDir: string, relativeDir = ""): Promise<string[]> {
@@ -284,7 +271,7 @@ export default tool({
         throw new Error(`preupload response invalid for ${fileNameInProject}`)
       }
 
-      await putToSignedUrl(uploadUrl, contentType, content)
+      await putToSignedUrlWithFallback(uploadUrl, contentType, content)
       uploadedFiles.push({
         path: fileNameInProject,
         hash,
@@ -352,7 +339,7 @@ export default tool({
     if (!buildVersionUploadUrl || !buildVersionContentType || !Number.isFinite(buildVersionFileId) || !Number.isFinite(buildVersionFileVersionId)) {
       throw new Error("preupload response invalid for build_version.json")
     }
-    await putToSignedUrl(buildVersionUploadUrl, buildVersionContentType, buildVersionJsonBytes)
+    await putToSignedUrlWithFallback(buildVersionUploadUrl, buildVersionContentType, buildVersionJsonBytes)
 
     const updatedBuildVersionResp: any = await sparkxRequest({
       apiBaseUrl,
