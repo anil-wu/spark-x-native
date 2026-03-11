@@ -16,15 +16,17 @@ import {
 } from "@/lib/projects-api";
 
 const pickFallbackCover = (index: number) => {
-  const covers = [
-    "/revamp/cover1.jpg",
-    "/revamp/cover2.jpg",
-    "/revamp/cover3.jpg",
-    "/revamp/cover4.jpg",
-    "/revamp/cover5.jpg",
-    "/revamp/cover6.jpg",
+  const themes = [
+    { from: "#f97316", to: "#fb7185" },
+    { from: "#3b82f6", to: "#22c55e" },
+    { from: "#a855f7", to: "#06b6d4" },
+    { from: "#0f172a", to: "#f59e0b" },
+    { from: "#ef4444", to: "#8b5cf6" },
+    { from: "#14b8a6", to: "#6366f1" },
   ];
-  return covers[index % covers.length]!;
+  const theme = themes[index % themes.length]!;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${theme.from}"/><stop offset="1" stop-color="${theme.to}"/></linearGradient><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M0 80L80 0" stroke="rgba(255,255,255,0.18)" stroke-width="8"/></pattern></defs><rect width="1200" height="630" fill="url(#g)"/><rect width="1200" height="630" fill="url(#p)"/><circle cx="980" cy="140" r="220" fill="rgba(255,255,255,0.12)"/><circle cx="220" cy="520" r="260" fill="rgba(0,0,0,0.10)"/></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
 
 export default function ProjectsHub() {

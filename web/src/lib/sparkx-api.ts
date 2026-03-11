@@ -137,9 +137,22 @@ export const mapSparkxProject = (project: SparkxProject): Project => ({
   createdAt: toIsoString(project.createdAt),
   updatedAt: toIsoString(project.updatedAt),
   coverImage:
-    typeof project.coverFileId === "number" && project.coverFileId > 0
-      ? `/api/files/${project.coverFileId}/content`
-      : undefined,
+    (() => {
+      const raw =
+        (project as unknown as Record<string, unknown>).coverFileId ??
+        (project as unknown as Record<string, unknown>).cover_file_id ??
+        (project as unknown as Record<string, unknown>).coverFileID ??
+        (project as unknown as Record<string, unknown>).cover_fileId;
+      const normalized =
+        typeof raw === "number"
+          ? raw
+          : typeof raw === "string"
+            ? Number.parseInt(raw, 10)
+            : NaN;
+      return Number.isInteger(normalized) && normalized > 0
+        ? `/api/files/${normalized}/content`
+        : undefined;
+    })(),
 });
 
 export type { SparkxProject, SparkxPagedResponse };

@@ -31,7 +31,6 @@ export const createSeedProjects = (): Project[] => {
         "A starter project to explore the editor, tools, and workflow. You can rename or delete it anytime.",
       createdAt,
       updatedAt: createdAt,
-      coverImage: "/revamp/cover1.jpg",
     },
   ];
 };
