@@ -43,6 +43,39 @@ const base64UrlDecode = (value: string): string =>
 const sign = (payload: string): string =>
   createHmac("sha256", getSessionSecret()).update(payload).digest("base64url");
 
+const normalizeJwtNumericClaim = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.floor(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number.parseInt(trimmed, 10);
+    if (Number.isInteger(parsed)) return parsed;
+  }
+  return null;
+};
+
+const getJwtExp = (token: string): number | null => {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const payload = parts[1];
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(base64UrlDecode(payload)) as { exp?: unknown };
+    return normalizeJwtNumericClaim(parsed.exp);
+  } catch {
+    return null;
+  }
+};
+
+const isJwtExpired = (token: string): boolean => {
+  const exp = getJwtExp(token);
+  if (!exp) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return exp <= now;
+};
+
 const parseCookieValue = (cookieHeader: string, key: string): string | null => {
   const pairs = cookieHeader.split("; ");
   for (const pair of pairs) {
@@ -102,6 +135,11 @@ const decodeSessionToken = (token: string): SparkxSession | null => {
       return null;
     }
 
+    const accessToken = parsed.accessToken.trim();
+    if (isJwtExpired(accessToken)) {
+      return null;
+    }
+
     return {
       userId: Number(parsed.userId),
       email: parsed.email,
@@ -109,7 +147,7 @@ const decodeSessionToken = (token: string): SparkxSession | null => {
         typeof parsed.username === "string" && parsed.username.trim()
           ? parsed.username
           : undefined,
-      accessToken: parsed.accessToken.trim(),
+      accessToken,
       isSuper: parsed.isSuper === true,
     };
   } catch {
